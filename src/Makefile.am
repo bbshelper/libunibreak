@@ -17,7 +17,8 @@ libunibreak_la_SOURCES = \
 	linebreakdef.c \
 	emojidef.c \
 	graphemebreak.c \
-	wordbreak.c
+	wordbreak.c \
+	bmp.c
 
 EXTRA_DIST = \
 	extract_data.sed \

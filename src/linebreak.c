@@ -52,6 +52,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdint.h>
 #include "linebreak.h"
 #include "linebreakdef.h"
 
@@ -413,6 +414,8 @@ static enum LineBreakClass get_char_lb_class(
     return LBP_XX;
 }
 
+uint_fast8_t
+data_get (unsigned u);
 /**
  * Gets the line breaking class of a character from the default line
  * breaking properties array.
@@ -423,6 +426,9 @@ static enum LineBreakClass get_char_lb_class(
 static enum LineBreakClass get_char_lb_class_default(
         utf32_t ch)
 {
+    if (ch < 65536)
+        return (enum LineBreakClass) data_get(ch);
+
     size_t i = 0;
     while (ch > lb_prop_index[i].end)
     {
