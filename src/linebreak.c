@@ -290,24 +290,6 @@ static enum BreakAction baTable[LBP_CB][LBP_CB] = {
 };
 
 /**
- * Struct for the second-level index to the line breaking properties.
- */
-struct LineBreakPropertiesIndex
-{
-    utf32_t end;                           /**< End codepoint */
-    const struct LineBreakProperties *lbp; /**< Pointer to line breaking
-                                                properties */
-};
-
-/**
- * Second-level index to the line breaking properties.
- */
-static struct LineBreakPropertiesIndex lb_prop_index[LINEBREAK_INDEX_SIZE] =
-{
-    { 0xFFFFFFFF, lb_prop_default }
-};
-
-/**
  * Checks whether the \a str ends with \a suffix, which has length
  * \a suffix_len.
  *
@@ -346,25 +328,6 @@ static __inline int ends_with(const char *str, const char *suffix,
  */
 void init_linebreak(void)
 {
-    size_t i;
-    size_t iPropDefault;
-    size_t len;
-    size_t step;
-
-    len = 0;
-    while (lb_prop_default[len].prop != LBP_Undefined)
-    {
-        ++len;
-    }
-    step = len / LINEBREAK_INDEX_SIZE;
-    iPropDefault = 0;
-    for (i = 0; i < LINEBREAK_INDEX_SIZE; ++i)
-    {
-        lb_prop_index[i].lbp = lb_prop_default + iPropDefault;
-        iPropDefault += step;
-        lb_prop_index[i].end = lb_prop_default[iPropDefault].start - 1;
-    }
-    lb_prop_index[--i].end = 0xFFFFFFFF;
 }
 
 /**
@@ -423,13 +386,23 @@ static enum LineBreakClass get_char_lb_class(
 static enum LineBreakClass get_char_lb_class_default(
         utf32_t ch)
 {
-    size_t i = 0;
-    while (ch > lb_prop_index[i].end)
-    {
-        ++i;
+    if (ch < 65536)
+        return lb_prop_bmp[ch];
+
+    unsigned int start = 0;
+    unsigned int end = sizeof(lb_prop_supplementary) / sizeof(lb_prop_supplementary[0]);
+    while (end > start) {
+        unsigned int mid = (start + end) / 2; // won't overflow
+        const struct LineBreakProperties *ptr = lb_prop_supplementary + mid;
+        if (ch < ptr->start) {
+            end = mid;
+        } else if (ch > ptr->end) {
+            start = mid;
+        } else {
+            return ptr->prop;
+        }
     }
-    assert(i < LINEBREAK_INDEX_SIZE);
-    return get_char_lb_class(ch, lb_prop_index[i].lbp);
+    return LBP_XX;
 }
 
 /**
